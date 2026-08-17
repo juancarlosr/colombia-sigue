@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth/guards";
 import { getCompanyDetail, type CompanyMonthly } from "@/lib/company-overview";
 import { EMPLOYEE_STATUS_LABELS } from "@/lib/labels";
 import { formatCop, formatPeriod } from "@/lib/format";
+import { SortableTable } from "@/components/sortable-table";
 
 function monthlyStateLabel(row: CompanyMonthly): string {
   if (row.received) return "Recibido";
@@ -73,61 +74,63 @@ export default async function CompanyDetailPage({
         {monthly.length === 0 ? (
           <p className="text-sm text-muted-foreground">Todavía no hay períodos de nómina.</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border bg-card">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                  <th className="p-3 font-medium">Mes</th>
-                  <th className="p-3 text-right font-medium">Aportes</th>
-                  <th className="p-3 text-right font-medium">Total donado</th>
-                  <th className="p-3 font-medium">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {monthly.map((row) => (
-                  <tr key={row.periodId} className="border-b last:border-0">
-                    <td className="p-3">{formatPeriod(row.month, row.year)}</td>
-                    <td className="p-3 text-right">{row.deductedCount}</td>
-                    <td className="p-3 text-right font-medium">
-                      {formatCop(row.totalDeducted)}
-                    </td>
-                    <td className="p-3">{monthlyStateLabel(row)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <SortableTable
+            columns={[
+              { key: "month", label: "Mes" },
+              { key: "count", label: "Aportes", align: "right" },
+              { key: "total", label: "Total donado", align: "right" },
+              { key: "state", label: "Estado" },
+            ]}
+            rows={monthly.map((row) => ({
+              id: row.periodId,
+              cells: {
+                month: {
+                  node: formatPeriod(row.month, row.year),
+                  value: row.year * 100 + row.month,
+                },
+                count: { node: row.deductedCount, value: row.deductedCount },
+                total: {
+                  node: <span className="font-medium">{formatCop(row.totalDeducted)}</span>,
+                  value: row.totalDeducted,
+                },
+                state: {
+                  node: monthlyStateLabel(row),
+                  value: row.received ? 2 : row.transferred ? 1 : 0,
+                },
+              },
+            }))}
+          />
         )}
       </section>
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Empleados inscritos ({employees.length})</h2>
-        <div className="overflow-x-auto rounded-xl border bg-card">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                <th className="p-3 font-medium">Nombre</th>
-                <th className="p-3 font-medium">Email</th>
-                <th className="p-3 font-medium">Estado</th>
-                <th className="p-3 text-right font-medium">Aporte activo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((employee) => (
-                <tr key={employee.id} className="border-b last:border-0">
-                  <td className="p-3">{employee.name}</td>
-                  <td className="p-3">{employee.email}</td>
-                  <td className="p-3">{EMPLOYEE_STATUS_LABELS[employee.status]}</td>
-                  <td className="p-3 text-right">
-                    {employee.activeAmount !== null
-                      ? `${formatCop(employee.activeAmount)} / mes`
-                      : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <SortableTable
+          columns={[
+            { key: "name", label: "Nombre" },
+            { key: "email", label: "Email" },
+            { key: "status", label: "Estado" },
+            { key: "amount", label: "Aporte activo", align: "right" },
+          ]}
+          rows={employees.map((employee) => ({
+            id: employee.id,
+            cells: {
+              name: { node: employee.name, value: employee.name },
+              email: { node: employee.email, value: employee.email },
+              status: {
+                node: EMPLOYEE_STATUS_LABELS[employee.status],
+                value: EMPLOYEE_STATUS_LABELS[employee.status],
+              },
+              amount: {
+                node:
+                  employee.activeAmount !== null
+                    ? `${formatCop(employee.activeAmount)} / mes`
+                    : "—",
+                value: employee.activeAmount,
+              },
+            },
+          }))}
+        />
       </section>
     </div>
   );

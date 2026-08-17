@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { getCompaniesOverview } from "@/lib/company-overview";
 import { formatCop, formatPeriod } from "@/lib/format";
+import { SortableTable } from "@/components/sortable-table";
 import { MarkReceivedButton } from "./mark-received-button";
 
 export default async function PlatformHomePage() {
@@ -40,46 +41,55 @@ export default async function PlatformHomePage() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Empresas inscritas ({companies.length})</h2>
-        <div className="overflow-x-auto rounded-xl border bg-card">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                <th className="p-3 font-medium">Empresa</th>
-                <th className="p-3 text-right font-medium">Empleados</th>
-                <th className="p-3 text-right font-medium">Activados</th>
-                <th className="p-3 text-right font-medium">Donantes activos</th>
-                <th className="p-3 text-right font-medium">Autorizado / mes</th>
-                <th className="p-3 text-right font-medium">Donado total</th>
-                <th className="p-3 font-medium"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {companies.map((company) => (
-                <tr key={company.id} className="border-b last:border-0">
-                  <td className="p-3">
+        <SortableTable
+          columns={[
+            { key: "company", label: "Empresa" },
+            { key: "employees", label: "Empleados", align: "right" },
+            { key: "activated", label: "Activados", align: "right" },
+            { key: "donors", label: "Donantes activos", align: "right" },
+            { key: "authorized", label: "Autorizado / mes", align: "right" },
+            { key: "donated", label: "Donado total", align: "right" },
+            { key: "detail", label: "", sortable: false },
+          ]}
+          rows={companies.map((company) => ({
+            id: company.id,
+            cells: {
+              company: {
+                node: (
+                  <>
                     <p className="font-medium">{company.name}</p>
                     <p className="text-xs text-muted-foreground">NIT {company.nit}</p>
-                  </td>
-                  <td className="p-3 text-right">{company.employeesTotal}</td>
-                  <td className="p-3 text-right">{company.employeesActivated}</td>
-                  <td className="p-3 text-right">{company.activeDonors}</td>
-                  <td className="p-3 text-right">{formatCop(company.monthlyAuthorized)}</td>
-                  <td className="p-3 text-right font-medium">
-                    {formatCop(company.totalDeducted)}
-                  </td>
-                  <td className="p-3">
-                    <Link
-                      href={`/platform/empresas/${company.id}`}
-                      className="text-sm underline underline-offset-2"
-                    >
-                      Ver detalle
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </>
+                ),
+                value: company.name,
+              },
+              employees: { node: company.employeesTotal, value: company.employeesTotal },
+              activated: { node: company.employeesActivated, value: company.employeesActivated },
+              donors: { node: company.activeDonors, value: company.activeDonors },
+              authorized: {
+                node: formatCop(company.monthlyAuthorized),
+                value: company.monthlyAuthorized,
+              },
+              donated: {
+                node: (
+                  <span className="font-medium">{formatCop(company.totalDeducted)}</span>
+                ),
+                value: company.totalDeducted,
+              },
+              detail: {
+                node: (
+                  <Link
+                    href={`/platform/empresas/${company.id}`}
+                    className="text-sm underline underline-offset-2"
+                  >
+                    Ver detalle
+                  </Link>
+                ),
+                value: null,
+              },
+            },
+          }))}
+        />
         <p className="text-xs text-muted-foreground">
           Donado total suma los descuentos de nómina realmente aplicados. El detalle por mes y
           las métricas del piloto están en cada empresa.
@@ -91,57 +101,61 @@ export default async function PlatformHomePage() {
         {periods.length === 0 ? (
           <p className="text-sm text-muted-foreground">Todavía no hay períodos.</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border bg-card">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                  <th className="p-3 font-medium">Período</th>
-                  <th className="p-3 font-medium">Empresa</th>
-                  <th className="p-3 text-right font-medium">Descontado</th>
-                  <th className="p-3 font-medium">Transferencia</th>
-                  <th className="p-3 font-medium">Recepción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {periods.map((period) => {
-                  const totalDeducted = period.contributions.reduce(
-                    (sum, c) => sum + (c.amountDeducted ?? 0),
-                    0,
-                  );
-                  return (
-                    <tr key={period.id} className="border-b align-top last:border-0">
-                      <td className="p-3">{formatPeriod(period.month, period.year)}</td>
-                      <td className="p-3">
-                        <Link
-                          href={`/platform/empresas/${period.companyId}`}
-                          className="underline underline-offset-2"
-                        >
-                          {period.company.name}
-                        </Link>
-                      </td>
-                      <td className="p-3 text-right">{formatCop(totalDeducted)}</td>
-                      <td className="p-3">
-                        {period.transferDate
-                          ? `${formatCop(period.transferAmount ?? 0)} · ${period.transferDate.toLocaleDateString("es-CO", { timeZone: "America/Bogota" })} · Ref: ${period.transferBankReference}`
-                          : "Sin registrar"}
-                      </td>
-                      <td className="p-3">
-                        {period.foundationReceivedAt ? (
-                          <span className="font-medium text-green-700 dark:text-green-400">
-                            Recibido
-                          </span>
-                        ) : period.transferDate ? (
-                          <MarkReceivedButton periodId={period.id} />
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <SortableTable
+            columns={[
+              { key: "period", label: "Período" },
+              { key: "company", label: "Empresa" },
+              { key: "deducted", label: "Descontado", align: "right" },
+              { key: "transfer", label: "Transferencia" },
+              { key: "reception", label: "Recepción" },
+            ]}
+            rows={periods.map((period) => {
+              const totalDeducted = period.contributions.reduce(
+                (sum, c) => sum + (c.amountDeducted ?? 0),
+                0,
+              );
+              return {
+                id: period.id,
+                cells: {
+                  period: {
+                    node: formatPeriod(period.month, period.year),
+                    value: period.year * 100 + period.month,
+                  },
+                  company: {
+                    node: (
+                      <Link
+                        href={`/platform/empresas/${period.companyId}`}
+                        className="underline underline-offset-2"
+                      >
+                        {period.company.name}
+                      </Link>
+                    ),
+                    value: period.company.name,
+                  },
+                  deducted: { node: formatCop(totalDeducted), value: totalDeducted },
+                  transfer: {
+                    node: period.transferDate
+                      ? `${formatCop(period.transferAmount ?? 0)} · ${period.transferDate.toLocaleDateString("es-CO", { timeZone: "America/Bogota" })} · Ref: ${period.transferBankReference}`
+                      : "Sin registrar",
+                    value: period.transferDate?.getTime() ?? null,
+                  },
+                  reception: {
+                    node: period.foundationReceivedAt ? (
+                      <span className="font-medium text-green-700 dark:text-green-400">
+                        Recibido
+                      </span>
+                    ) : period.transferDate ? (
+                      <MarkReceivedButton periodId={period.id} />
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    ),
+                    // orden: recibido > transferido pendiente > sin transferencia
+                    value: period.foundationReceivedAt ? 2 : period.transferDate ? 1 : 0,
+                  },
+                },
+              };
+            })}
+          />
         )}
       </section>
     </div>

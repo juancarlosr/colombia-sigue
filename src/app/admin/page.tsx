@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireCompanyAdmin } from "@/lib/auth/company-admin";
 import { resolveOperatingPeriod } from "@/lib/payroll";
 import { formatCop, formatPeriod } from "@/lib/format";
+import { SortableTable } from "@/components/sortable-table";
 import { InviteButton } from "./invite-button";
 
 export default async function AdminDashboardPage() {
@@ -80,26 +81,27 @@ export default async function AdminDashboardPage() {
         {activeAuthorizations.length === 0 ? (
           <p className="text-sm text-muted-foreground">Todavía no hay donantes activos.</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border bg-card">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                  <th className="p-3 font-medium">Empleado</th>
-                  <th className="p-3 font-medium">Documento</th>
-                  <th className="p-3 text-right font-medium">Monto mensual</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activeAuthorizations.map((auth) => (
-                  <tr key={auth.id} className="border-b last:border-0">
-                    <td className="p-3">{auth.employee.name}</td>
-                    <td className="p-3">{auth.employee.documentNumber}</td>
-                    <td className="p-3 text-right font-medium">{formatCop(auth.amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <SortableTable
+            columns={[
+              { key: "employee", label: "Empleado" },
+              { key: "document", label: "Documento" },
+              { key: "amount", label: "Monto mensual", align: "right" },
+            ]}
+            rows={activeAuthorizations.map((auth) => ({
+              id: auth.id,
+              cells: {
+                employee: { node: auth.employee.name, value: auth.employee.name },
+                document: {
+                  node: auth.employee.documentNumber,
+                  value: auth.employee.documentNumber,
+                },
+                amount: {
+                  node: <span className="font-medium">{formatCop(auth.amount)}</span>,
+                  value: auth.amount,
+                },
+              },
+            }))}
+          />
         )}
       </section>
     </div>
