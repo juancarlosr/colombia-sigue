@@ -77,14 +77,16 @@ export default async function EmployeeHomePage() {
           <h2 className="text-lg font-semibold">Mis aportes</h2>
           <ul className="divide-y rounded-xl border bg-card">
             {contributions.map((c) => (
-              <li key={c.id} className="flex items-center justify-between gap-2 p-4 text-sm">
+              <li key={c.id} className="flex items-center justify-between gap-2 p-4">
                 <span>{formatPeriod(c.payrollPeriod.month, c.payrollPeriod.year)}</span>
-                <span className="font-medium">{formatCop(c.amountDeducted ?? c.amountAuthorized)}</span>
-                <span className="text-muted-foreground">{CONTRIBUTION_LABELS[c.status]}</span>
+                <span className="font-bold">{formatCop(c.amountDeducted ?? c.amountAuthorized)}</span>
+                <span className="font-medium text-muted-foreground">
+                  {CONTRIBUTION_LABELS[c.status]}
+                </span>
               </li>
             ))}
           </ul>
-          <p className="text-right text-sm">
+          <p className="text-right">
             Total aportado: <strong>{formatCop(totalContributed)}</strong>
           </p>
         </section>

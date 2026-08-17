@@ -43,7 +43,7 @@ export default async function PlatformHomePage() {
         <div className="overflow-x-auto rounded-xl border bg-card">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-left text-muted-foreground">
+              <tr className="border-b text-left text-xs font-bold tracking-wider text-muted-foreground uppercase">
                 <th className="p-3 font-medium">Empresa</th>
                 <th className="p-3 text-right font-medium">Empleados</th>
                 <th className="p-3 text-right font-medium">Activados</th>
@@ -94,7 +94,7 @@ export default async function PlatformHomePage() {
           <div className="overflow-x-auto rounded-xl border bg-card">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left text-muted-foreground">
+                <tr className="border-b text-left text-xs font-bold tracking-wider text-muted-foreground uppercase">
                   <th className="p-3 font-medium">Período</th>
                   <th className="p-3 font-medium">Empresa</th>
                   <th className="p-3 text-right font-medium">Descontado</th>

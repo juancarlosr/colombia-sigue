@@ -27,7 +27,7 @@ export default async function ImportPage() {
         <div className="overflow-x-auto rounded-xl border bg-card">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-left text-muted-foreground">
+              <tr className="border-b text-left text-xs font-bold tracking-wider text-muted-foreground uppercase">
                 <th className="p-3 font-medium">ID</th>
                 <th className="p-3 font-medium">Nombre</th>
                 <th className="p-3 font-medium">Email</th>

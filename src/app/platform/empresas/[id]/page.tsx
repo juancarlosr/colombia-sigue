@@ -55,8 +55,10 @@ export default async function CompanyDetailPage({
             ["Total recibido por la fundación", formatCop(metrics.totalReceived)],
           ].map(([label, value]) => (
             <div key={label} className="rounded-xl border bg-card p-4">
-              <dt className="text-sm text-muted-foreground">{label}</dt>
-              <dd className="text-xl font-semibold">{value}</dd>
+              <dt className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                {label}
+              </dt>
+              <dd className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">{value}</dd>
             </div>
           ))}
         </dl>
@@ -74,7 +76,7 @@ export default async function CompanyDetailPage({
           <div className="overflow-x-auto rounded-xl border bg-card">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left text-muted-foreground">
+                <tr className="border-b text-left text-xs font-bold tracking-wider text-muted-foreground uppercase">
                   <th className="p-3 font-medium">Mes</th>
                   <th className="p-3 text-right font-medium">Aportes</th>
                   <th className="p-3 text-right font-medium">Total donado</th>
@@ -103,7 +105,7 @@ export default async function CompanyDetailPage({
         <div className="overflow-x-auto rounded-xl border bg-card">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-left text-muted-foreground">
+              <tr className="border-b text-left text-xs font-bold tracking-wider text-muted-foreground uppercase">
                 <th className="p-3 font-medium">Nombre</th>
                 <th className="p-3 font-medium">Email</th>
                 <th className="p-3 font-medium">Estado</th>

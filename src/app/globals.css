@@ -9,7 +9,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-bricolage);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -60,7 +60,7 @@
   --secondary: oklch(0.94 0.03 231);
   --secondary-foreground: oklch(0.35 0.05 245);
   --muted: oklch(0.955 0.012 236);
-  --muted-foreground: oklch(0.5 0.025 252);
+  --muted-foreground: oklch(0.43 0.03 252);
   --accent: oklch(0.94 0.03 231);
   --accent-foreground: oklch(0.35 0.05 245);
   --destructive: oklch(0.577 0.245 27.325);
@@ -95,7 +95,7 @@
   --secondary: oklch(0.32 0.04 245);
   --secondary-foreground: oklch(0.9 0.03 231);
   --muted: oklch(0.29 0.025 252);
-  --muted-foreground: oklch(0.7 0.02 240);
+  --muted-foreground: oklch(0.76 0.02 240);
   --accent: oklch(0.32 0.04 245);
   --accent-foreground: oklch(0.9 0.03 231);
   --destructive: oklch(0.704 0.191 22.216);
@@ -123,8 +123,22 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Jakarta at 400 reads thin at small sizes; 450 keeps it airy but legible */
+    font-variation-settings: "wght" 450;
   }
   html {
     @apply font-sans;
+    /* 17px base: body copy never squints */
+    font-size: 106.25%;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading;
+  }
+  strong,
+  b {
+    font-variation-settings: "wght" 700;
   }
 }
