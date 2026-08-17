@@ -8,33 +8,20 @@ import {
   UserRole,
 } from "@prisma/client";
 
+import {
+  AUTHORIZATION_TEXT_VERSION,
+  buildAuthorizationText,
+} from "../src/lib/authorization-text";
+
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
-
-// Placeholder pending review by a Colombian labor lawyer (launch gate,
-// spec §28). Swapping in the approved text is a data change: bump the
-// version and update AUTHORIZATION_TEXT.
-const AUTHORIZATION_TEXT_VERSION = "v0-draft";
 
 const COMPANY_NAME = "Acme Colombia SAS";
 const FOUNDATION_NAME = "Fundación Reconstruir Colombia";
 
-function formatCop(amount: number): string {
-  return `$${amount.toLocaleString("es-CO")}`;
-}
-
-function authorizationText(amount: number): string {
-  return (
-    `Autorizo voluntariamente a ${COMPANY_NAME} a descontar ${formatCop(amount)} ` +
-    `mensuales de mi nómina y transferir estos recursos a ${FOUNDATION_NAME}. ` +
-    `Entiendo que puedo modificar o revocar esta autorización en cualquier momento ` +
-    `y que los cambios aplicarán a los períodos de nómina que todavía no hayan sido procesados.`
-  );
-}
-
 function consentEvidence(email: string, amount: number) {
   return {
-    authorizationText: authorizationText(amount),
+    authorizationText: buildAuthorizationText(COMPANY_NAME, FOUNDATION_NAME, amount),
     authorizationTextVersion: AUTHORIZATION_TEXT_VERSION,
     email,
     ipAddress: null,
