@@ -28,6 +28,19 @@ npm run db:seed
 npm run dev
 ```
 
+## Autenticación
+
+Sin contraseñas: magic links de un solo uso (15 min de vigencia, hash SHA-256 en base de datos) con sesión en cookie JWT firmada (`SESSION_SECRET`). Sin `RESEND_API_KEY`, los enlaces se imprimen en la consola del servidor — el modo esperado en desarrollo.
+
+Para entrar como cualquier usuario en desarrollo:
+
+```bash
+npx tsx scripts/mint-login-token.ts ana.gomez@acme.example.com
+# abre http://localhost:3000/auth/verify?token=<token>
+```
+
+Roles: `EMPLOYEE` (`/app`), `COMPANY_ADMIN` (`/admin`), `PLATFORM_ADMIN` (`/platform`). La autorización se verifica server-side contra la base de datos en cada request — la cookie solo identifica al usuario.
+
 ## Datos demo
 
 El seed crea la empresa **Acme Colombia SAS**, la **Fundación Reconstruir Colombia** y 10 empleados que cubren todos los estados del journey: autorizaciones activas, una cancelada, una reemplazada (cambio de monto) y el período de nómina Agosto 2026 con aportes en cada estado (`AUTHORIZED`, `DEDUCTED`, `RECEIVED`).

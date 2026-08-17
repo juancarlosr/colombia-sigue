@@ -138,6 +138,20 @@ model PayrollContribution {
   @@unique([payrollPeriodId, employeeId])
 }
 
+// Single-use magic-link tokens. Only the SHA-256 hash is stored; the
+// raw token travels in the emailed link. Serves both first-time
+// invitations and returning logins.
+model LoginToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+}
+
 model Foundation {
   id           String  @id @default(cuid())
   displayName  String
