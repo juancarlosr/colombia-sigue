@@ -1,31 +1,107 @@
-import { AuthorizationStatus, UserRole } from "@prisma/client";
+import Link from "next/link";
+import { AuthorizationStatus, ContributionStatus, EmployeeStatus } from "@prisma/client";
+import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
-import { requireRole } from "@/lib/auth/guards";
-import { formatCop } from "@/lib/format";
+import { requireCompanyAdmin } from "@/lib/auth/company-admin";
+import { currentPeriodParts } from "@/lib/payroll";
+import { formatCop, formatPeriod } from "@/lib/format";
+import { InviteButton } from "./invite-button";
 
-export default async function AdminHomePage() {
-  const user = await requireRole(UserRole.COMPANY_ADMIN);
-  const company = await db.company.findFirst({ where: { adminUserId: user.id } });
-  if (!company) {
-    return <p className="text-muted-foreground">No tienes una empresa asignada.</p>;
-  }
+export default async function AdminDashboardPage() {
+  const { company } = await requireCompanyAdmin();
+  const { month, year } = currentPeriodParts();
 
-  const stats = await db.donationAuthorization.aggregate({
-    where: { status: AuthorizationStatus.ACTIVE, employee: { companyId: company.id } },
-    _count: true,
-    _sum: { amount: true },
-  });
+  const [invitedCount, pendingInviteCount, activeAuthorizations, period] = await Promise.all([
+    db.employee.count({ where: { companyId: company.id, invitedAt: { not: null } } }),
+    db.employee.count({
+      where: { companyId: company.id, status: { not: EmployeeStatus.ACTIVATED } },
+    }),
+    db.donationAuthorization.findMany({
+      where: { status: AuthorizationStatus.ACTIVE, employee: { companyId: company.id } },
+      include: { employee: true },
+      orderBy: { employee: { name: "asc" } },
+    }),
+    db.payrollPeriod.findUnique({
+      where: { companyId_year_month: { companyId: company.id, year, month } },
+      include: { contributions: true },
+    }),
+  ]);
+
+  const totalAuthorized = activeAuthorizations.reduce((sum, a) => sum + a.amount, 0);
+  const deducted = period?.contributions.filter((c) => c.amountDeducted !== null) ?? [];
+  const totalDeducted = deducted.reduce((sum, c) => sum + (c.amountDeducted ?? 0), 0);
+  const receivedCount =
+    period?.contributions.filter((c) => c.status === ContributionStatus.RECEIVED).length ?? 0;
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold tracking-tight">{company.name}</h1>
-      <p className="text-muted-foreground">
-        Donantes activos: <strong>{stats._count}</strong> · Monto autorizado:{" "}
-        <strong>{formatCop(stats._sum.amount ?? 0)} / mes</strong>
-      </p>
-      <p className="text-sm text-muted-foreground">
-        El dashboard completo estará disponible en la siguiente fase.
-      </p>
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{company.name}</h1>
+          <p className="text-muted-foreground">{formatPeriod(month, year)}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button render={<Link href="/admin/importar" />} variant="outline">
+            Importar empleados
+          </Button>
+          <InviteButton pendingCount={pendingInviteCount} />
+          <Button render={<Link href="/admin/nomina" />}>Nómina del mes</Button>
+        </div>
+      </div>
+
+      <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {[
+          ["Empleados invitados", String(invitedCount)],
+          ["Donantes activos", String(activeAuthorizations.length)],
+          ["Monto autorizado", `${formatCop(totalAuthorized)} / mes`],
+          [
+            "Descontado este mes",
+            deducted.length > 0 ? formatCop(totalDeducted) : "—",
+          ],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-xl border bg-card p-4">
+            <dt className="text-sm text-muted-foreground">{label}</dt>
+            <dd className="text-xl font-semibold">{value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {period && (
+        <p className="text-sm text-muted-foreground">
+          Período {formatPeriod(month, year)}: {period.contributions.length} aportes en el
+          snapshot · {deducted.length} descontados
+          {period.transferDate ? " · transferencia registrada" : ""}
+          {period.foundationReceivedAt ? ` · ${receivedCount} confirmados por la fundación` : ""}
+        </p>
+      )}
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Donantes activos</h2>
+        {activeAuthorizations.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Todavía no hay donantes activos.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border bg-card">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="p-3 font-medium">Empleado</th>
+                  <th className="p-3 font-medium">Documento</th>
+                  <th className="p-3 text-right font-medium">Monto mensual</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activeAuthorizations.map((auth) => (
+                  <tr key={auth.id} className="border-b last:border-0">
+                    <td className="p-3">{auth.employee.name}</td>
+                    <td className="p-3">{auth.employee.documentNumber}</td>
+                    <td className="p-3 text-right font-medium">{formatCop(auth.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
