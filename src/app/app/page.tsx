@@ -6,16 +6,39 @@ import { requireEmployee } from "@/lib/auth/guards";
 import { getActiveAuthorization } from "@/lib/donations";
 import { formatCop, formatPeriod } from "@/lib/format";
 
+// Microcopy humano: el empleado debe entender dónde está su plata sin
+// conocer la máquina de estados.
 const CONTRIBUTION_LABELS: Record<ContributionStatus, string> = {
-  AUTHORIZED: "Pendiente",
-  DEDUCTED: "Descontado",
-  TRANSFERRED: "Transferido",
-  RECEIVED: "Recibido",
+  AUTHORIZED: "Pendiente de nómina",
+  DEDUCTED: "Descontado por tu empresa",
+  TRANSFERRED: "Transferido a la fundación",
+  RECEIVED: "Recibido por la fundación",
 };
 
-export default async function EmployeeHomePage() {
+const CONFIRMATION_MESSAGES: Record<string, { text: string; positive: boolean }> = {
+  confirmado: {
+    text: "Autorización confirmada. Tu aporte mensual quedó activo.",
+    positive: true,
+  },
+  actualizado: {
+    text: "Tu monto fue actualizado. Aplica desde el próximo período de nómina que no haya sido procesado.",
+    positive: true,
+  },
+  cancelado: {
+    text: "Tu aporte fue cancelado. No se harán nuevos descuentos en períodos de nómina que no hayan sido procesados.",
+    positive: false,
+  },
+};
+
+export default async function EmployeeHomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ msg?: string }>;
+}) {
   const user = await requireEmployee();
   const employee = user.employee;
+  const { msg } = await searchParams;
+  const confirmation = msg ? CONFIRMATION_MESSAGES[msg] : undefined;
 
   const [company, foundation, activeAuthorization, contributions] = await Promise.all([
     db.company.findUniqueOrThrow({ where: { id: employee.companyId } }),
@@ -32,6 +55,18 @@ export default async function EmployeeHomePage() {
 
   return (
     <div className="mx-auto max-w-md space-y-8">
+      {confirmation && (
+        <p
+          className={`rounded-xl p-4 text-sm font-medium ${
+            confirmation.positive
+              ? "bg-primary/15 text-foreground"
+              : "bg-accent text-accent-foreground"
+          }`}
+        >
+          {confirmation.text}
+        </p>
+      )}
+
       {activeAuthorization ? (
         <section className="space-y-4 rounded-xl border bg-card p-6 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">❤️ Tu aporte está activo</h1>
@@ -72,23 +107,41 @@ export default async function EmployeeHomePage() {
         </section>
       )}
 
-      {contributions.length > 0 && (
+      {(activeAuthorization || contributions.length > 0) && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Mis aportes</h2>
-          <ul className="divide-y rounded-xl border bg-card">
-            {contributions.map((c) => (
-              <li key={c.id} className="flex items-center justify-between gap-2 p-4">
-                <span>{formatPeriod(c.payrollPeriod.month, c.payrollPeriod.year)}</span>
-                <span className="font-bold">{formatCop(c.amountDeducted ?? c.amountAuthorized)}</span>
-                <span className="font-medium text-muted-foreground">
-                  {CONTRIBUTION_LABELS[c.status]}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-right">
-            Total aportado: <strong>{formatCop(totalContributed)}</strong>
-          </p>
+          {contributions.length === 0 ? (
+            <div className="space-y-2 rounded-xl border bg-card p-5">
+              <p className="text-sm text-muted-foreground">
+                Todavía no hay descuentos registrados. Cuando tu empresa procese la nómina,
+                verás aquí el estado de cada aporte.
+              </p>
+              <p className="text-right">
+                Total aportado: <strong>{formatCop(0)}</strong>
+              </p>
+            </div>
+          ) : (
+            <>
+              <ul className="divide-y rounded-xl border bg-card">
+                {contributions.map((c) => (
+                  <li key={c.id} className="flex items-center justify-between gap-3 p-4">
+                    <div>
+                      <p>{formatPeriod(c.payrollPeriod.month, c.payrollPeriod.year)}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {CONTRIBUTION_LABELS[c.status]}
+                      </p>
+                    </div>
+                    <span className="font-bold">
+                      {formatCop(c.amountDeducted ?? c.amountAuthorized)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-right">
+                Total aportado: <strong>{formatCop(totalContributed)}</strong>
+              </p>
+            </>
+          )}
         </section>
       )}
     </div>

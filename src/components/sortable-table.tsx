@@ -65,7 +65,7 @@ export function SortableTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border bg-card">
+    <div className="overflow-x-auto rounded-lg border bg-card">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-left text-xs text-muted-foreground">
@@ -80,7 +80,7 @@ export function SortableTable({
                   }
                 >
                   {column.sortable === false ? (
-                    <span className="block p-3 font-bold tracking-wider uppercase">
+                    <span className="block px-3 py-2 font-bold tracking-wider uppercase">
                       {column.label}
                     </span>
                   ) : (
@@ -88,7 +88,7 @@ export function SortableTable({
                       type="button"
                       onClick={() => toggleSort(column.key)}
                       className={cn(
-                        "flex w-full cursor-pointer items-center gap-1 p-3 font-bold tracking-wider uppercase transition-colors hover:text-foreground",
+                        "flex w-full cursor-pointer items-center gap-1 px-3 py-2 font-bold tracking-wider uppercase transition-colors hover:text-foreground",
                         column.align === "right" && "justify-end",
                         isActive && "text-foreground",
                       )}
@@ -110,7 +110,7 @@ export function SortableTable({
               {columns.map((column) => (
                 <td
                   key={column.key}
-                  className={cn("p-3", column.align === "right" && "text-right")}
+                  className={cn("px-3 py-2", column.align === "right" && "text-right")}
                 >
                   {row.cells[column.key]?.node}
                 </td>

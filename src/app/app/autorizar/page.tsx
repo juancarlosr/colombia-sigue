@@ -4,6 +4,7 @@ import { requireEmployee } from "@/lib/auth/guards";
 import { buildAuthorizationText } from "@/lib/authorization-text";
 import { amountSchema, getActiveAuthorization } from "@/lib/donations";
 import { formatCop } from "@/lib/format";
+import { JourneySteps } from "@/components/journey-steps";
 import { AuthorizeForm } from "./authorize-form";
 
 export default async function AuthorizePage({
@@ -28,6 +29,7 @@ export default async function AuthorizePage({
 
   return (
     <div className="mx-auto max-w-md space-y-6">
+      <JourneySteps current={2} />
       <h1 className="text-2xl font-semibold tracking-tight">Autorización voluntaria</h1>
       <blockquote className="rounded-xl border bg-card p-5 text-sm leading-relaxed">
         {authorizationText}

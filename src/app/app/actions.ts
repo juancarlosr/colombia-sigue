@@ -7,6 +7,7 @@ import {
   activateAuthorization,
   amountSchema,
   cancelActiveAuthorization,
+  getActiveAuthorization,
 } from "@/lib/donations";
 
 export type AuthorizeState = { error?: string };
@@ -25,6 +26,9 @@ export async function confirmAuthorization(
     return { error: "Debes leer y aceptar la autorización para continuar." };
   }
 
+  const hadActiveAuthorization =
+    (await getActiveAuthorization(user.employee.id)) !== null;
+
   const requestHeaders = await headers();
   await activateAuthorization(user.employee.id, parsedAmount.data, {
     email: user.email,
@@ -32,11 +36,11 @@ export async function confirmAuthorization(
     userAgent: requestHeaders.get("user-agent"),
   });
 
-  redirect("/app");
+  redirect(hadActiveAuthorization ? "/app?msg=actualizado" : "/app?msg=confirmado");
 }
 
 export async function cancelContribution(): Promise<void> {
   const user = await requireEmployee();
   await cancelActiveAuthorization(user.employee.id);
-  redirect("/app");
+  redirect("/app?msg=cancelado");
 }

@@ -29,7 +29,7 @@ export default async function PlatformHomePage() {
         </Button>
       </div>
 
-      <section className="rounded-xl border bg-card p-4 text-sm">
+      <section className="rounded-lg border bg-card p-4 text-sm">
         <p className="text-muted-foreground">Fundación</p>
         <p className="text-lg font-semibold">{foundation?.displayName ?? "Sin configurar"}</p>
         {foundation && (

@@ -58,7 +58,7 @@ export default async function AdminDashboardPage() {
             deducted.length > 0 ? formatCop(totalDeducted) : "—",
           ],
         ].map(([label, value]) => (
-          <div key={label} className="rounded-xl border bg-card p-4">
+          <div key={label} className="rounded-lg border bg-card p-4">
             <dt className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
               {label}
             </dt>

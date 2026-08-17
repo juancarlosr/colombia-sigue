@@ -1,5 +1,6 @@
 import { requireEmployee } from "@/lib/auth/guards";
 import { AMOUNT_PRESETS } from "@/lib/donations";
+import { JourneySteps } from "@/components/journey-steps";
 import { AmountForm } from "./amount-form";
 
 export default async function ChooseAmountPage() {
@@ -7,6 +8,7 @@ export default async function ChooseAmountPage() {
 
   return (
     <div className="mx-auto max-w-md space-y-6">
+      <JourneySteps current={1} />
       <h1 className="text-2xl font-semibold tracking-tight text-balance">
         ¿Cuánto quieres aportar mensualmente?
       </h1>

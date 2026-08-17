@@ -55,7 +55,7 @@ export default async function CompanyDetailPage({
             ["Retención a 3 meses", formatRate(metrics.threeMonthRetention)],
             ["Total recibido por la fundación", formatCop(metrics.totalReceived)],
           ].map(([label, value]) => (
-            <div key={label} className="rounded-xl border bg-card p-4">
+            <div key={label} className="rounded-lg border bg-card p-4">
               <dt className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
                 {label}
               </dt>
@@ -103,9 +103,17 @@ export default async function CompanyDetailPage({
         )}
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Empleados inscritos ({employees.length})</h2>
-        <SortableTable
+      {/* Colapsado por defecto: el operador de plataforma escanea métricas y
+          períodos; el listado nominal solo cuando lo necesita (spec §21). */}
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center gap-2 text-lg font-semibold">
+          <span className="text-sm transition-transform group-open:rotate-90" aria-hidden="true">
+            ▸
+          </span>
+          Empleados inscritos ({employees.length})
+        </summary>
+        <div className="mt-3">
+          <SortableTable
           columns={[
             { key: "name", label: "Nombre" },
             { key: "email", label: "Email" },
@@ -130,8 +138,9 @@ export default async function CompanyDetailPage({
               },
             },
           }))}
-        />
-      </section>
+          />
+        </div>
+      </details>
     </div>
   );
 }
