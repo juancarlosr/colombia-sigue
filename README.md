@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Colombia Sigue — Payroll Giving MVP
 
-## Getting Started
+MVP de payroll giving para Colombia. Valida una sola hipótesis: ¿los empleados están dispuestos a autorizar una pequeña donación mensual desde su nómina y mantenerla varios meses?
 
-First, run the development server:
+La plataforma **no mueve dinero**: registra autorizaciones voluntarias, genera el archivo para nómina y hace trazable el flujo empresa → fundación. Spec completa en [docs/payroll_giving_mvp_prompt.md](docs/payroll_giving_mvp_prompt.md).
+
+## Stack
+
+Next.js (App Router) · TypeScript · Tailwind + shadcn/ui · PostgreSQL · Prisma 7 · monolito.
+
+## Desarrollo local
+
+Requisitos: Node 20+, Docker.
 
 ```bash
+# 1. Levantar la base de datos
+docker compose up -d db
+
+# 2. Configurar variables de entorno
+cp .env.example .env
+
+# 3. Instalar dependencias, migrar y sembrar datos demo
+npm install
+npm run db:migrate
+npm run db:seed
+
+# 4. Correr la app
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Datos demo
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+El seed crea la empresa **Acme Colombia SAS**, la **Fundación Reconstruir Colombia** y 10 empleados que cubren todos los estados del journey: autorizaciones activas, una cancelada, una reemplazada (cambio de monto) y el período de nómina Agosto 2026 con aportes en cada estado (`AUTHORIZED`, `DEDUCTED`, `RECEIVED`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Modelo de datos
 
-## Learn More
+Seis entidades (`prisma/schema.prisma`): `Company`, `Employee`, `Foundation`, `DonationAuthorization`, `PayrollPeriod`, `PayrollContribution`, más `User` para auth/RBAC.
 
-To learn more about Next.js, take a look at the following resources:
+Regla central: `DonationAuthorization` es **append-only**. Cambiar el monto crea una autorización nueva y marca la anterior como `SUPERSEDED`; cancelar marca `CANCELLED`. Nunca se edita ni borra el consentimiento original.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Gates legales antes de descuentos reales
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- El texto de autorización (`v0-draft`) debe ser aprobado por un abogado laboral colombiano. Cambiarlo es un cambio de datos: nueva versión de texto, no cambio de código.
+- Cualquier promesa de beneficio tributario requiere validación de un especialista tributario.

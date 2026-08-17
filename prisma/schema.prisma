@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  EMPLOYEE
+  COMPANY_ADMIN
+  PLATFORM_ADMIN
+}
+
+enum EmployeeStatus {
+  IMPORTED
+  INVITED
+  ACTIVATED
+}
+
+enum AuthorizationStatus {
+  ACTIVE
+  CANCELLED
+  SUPERSEDED
+}
+
+enum PayrollPeriodStatus {
+  OPEN
+  CLOSED
+}
+
+enum ContributionStatus {
+  AUTHORIZED
+  DEDUCTED
+  TRANSFERRED
+  RECEIVED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  role      UserRole
+  createdAt DateTime @default(now())
+
+  employee Employee?
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  nit         String   @unique
+  adminUserId String?
+  createdAt   DateTime @default(now())
+
+  employees      Employee[]
+  payrollPeriods PayrollPeriod[]
+}
+
+model Employee {
+  id             String         @id @default(cuid())
+  companyId      String
+  externalId     String
+  name           String
+  documentNumber String
+  email          String
+  status         EmployeeStatus @default(IMPORTED)
+  invitedAt      DateTime?
+  userId         String?        @unique
+  createdAt      DateTime       @default(now())
+
+  company        Company                 @relation(fields: [companyId], references: [id])
+  user           User?                   @relation(fields: [userId], references: [id])
+  authorizations DonationAuthorization[]
+  contributions  PayrollContribution[]
+
+  @@unique([companyId, externalId])
+  @@unique([companyId, email])
+}
+
+// Append-only: rows are never updated in their consent fields and never
+// deleted. Amount changes create a new row; the old one is marked
+// SUPERSEDED and points to its replacement via supersededById.
+model DonationAuthorization {
+  id                       String              @id @default(cuid())
+  employeeId               String
+  amount                   Int // COP, whole pesos
+  status                   AuthorizationStatus @default(ACTIVE)
+  authorizationTextVersion String
+  authorizedAt             DateTime            @default(now())
+  cancelledAt              DateTime?
+  supersededById           String?             @unique
+  metadata                 Json // consent evidence: full text, email, ip, user agent
+
+  employee      Employee               @relation(fields: [employeeId], references: [id])
+  supersededBy  DonationAuthorization? @relation("Supersession", fields: [supersededById], references: [id])
+  supersedes    DonationAuthorization? @relation("Supersession")
+  contributions PayrollContribution[]
+
+  @@index([employeeId, status])
+}
+
+model PayrollPeriod {
+  id        String              @id @default(cuid())
+  companyId String
+  month     Int // 1-12
+  year      Int
+  status    PayrollPeriodStatus @default(OPEN)
+  createdAt DateTime            @default(now())
+
+  // Transfer to the foundation happens outside the system; the admin
+  // registers it here. One foundation, one transfer per period.
+  transferAmount        Int?
+  transferDate          DateTime?
+  transferBankReference String?
+  transferProofUrl      String?
+  foundationReceivedAt  DateTime?
+
+  company       Company               @relation(fields: [companyId], references: [id])
+  contributions PayrollContribution[]
+
+  @@unique([companyId, year, month])
+}
+
+model PayrollContribution {
+  id                     String             @id @default(cuid())
+  payrollPeriodId        String
+  employeeId             String
+  authorizationId        String
+  amountAuthorized       Int
+  amountDeducted         Int?
+  status                 ContributionStatus @default(AUTHORIZED)
+  receivedByFoundationAt DateTime?
+
+  payrollPeriod PayrollPeriod         @relation(fields: [payrollPeriodId], references: [id])
+  employee      Employee              @relation(fields: [employeeId], references: [id])
+  authorization DonationAuthorization @relation(fields: [authorizationId], references: [id])
+
+  @@unique([payrollPeriodId, employeeId])
+}
+
+model Foundation {
+  id           String  @id @default(cuid())
+  displayName  String
+  legalName    String
+  nit          String  @unique
+  logoUrl      String?
+  website      String?
+  description  String?
+  bankName     String?
+  bankAccount  String?
+  contactName  String?
+  contactEmail String?
+}
