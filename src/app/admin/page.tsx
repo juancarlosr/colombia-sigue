@@ -3,15 +3,17 @@ import { AuthorizationStatus, ContributionStatus, EmployeeStatus } from "@prisma
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { requireCompanyAdmin } from "@/lib/auth/company-admin";
-import { currentPeriodParts } from "@/lib/payroll";
+import { resolveOperatingPeriod } from "@/lib/payroll";
 import { formatCop, formatPeriod } from "@/lib/format";
 import { InviteButton } from "./invite-button";
 
 export default async function AdminDashboardPage() {
   const { company } = await requireCompanyAdmin();
-  const { month, year } = currentPeriodParts();
+  const resolution = await resolveOperatingPeriod(company.id);
+  const { month, year } = resolution;
+  const period = resolution.period;
 
-  const [invitedCount, pendingInviteCount, activeAuthorizations, period] = await Promise.all([
+  const [invitedCount, pendingInviteCount, activeAuthorizations] = await Promise.all([
     db.employee.count({ where: { companyId: company.id, invitedAt: { not: null } } }),
     db.employee.count({
       where: { companyId: company.id, status: { not: EmployeeStatus.ACTIVATED } },
@@ -20,10 +22,6 @@ export default async function AdminDashboardPage() {
       where: { status: AuthorizationStatus.ACTIVE, employee: { companyId: company.id } },
       include: { employee: true },
       orderBy: { employee: { name: "asc" } },
-    }),
-    db.payrollPeriod.findUnique({
-      where: { companyId_year_month: { companyId: company.id, year, month } },
-      include: { contributions: true },
     }),
   ]);
 
@@ -55,7 +53,7 @@ export default async function AdminDashboardPage() {
           ["Donantes activos", String(activeAuthorizations.length)],
           ["Monto autorizado", `${formatCop(totalAuthorized)} / mes`],
           [
-            "Descontado este mes",
+            "Descontado este período",
             deducted.length > 0 ? formatCop(totalDeducted) : "—",
           ],
         ].map(([label, value]) => (

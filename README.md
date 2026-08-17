@@ -45,6 +45,12 @@ Roles: `EMPLOYEE` (`/app`), `COMPANY_ADMIN` (`/admin`), `PLATFORM_ADMIN` (`/plat
 
 El seed crea la empresa **Acme Colombia SAS**, la **Fundación Reconstruir Colombia** y 10 empleados que cubren todos los estados del journey: autorizaciones activas, una cancelada, una reemplazada (cambio de monto) y el período de nómina Agosto 2026 con aportes en cada estado (`AUTHORIZED`, `DEDUCTED`, `RECEIVED`).
 
+## Ciclo mensual de nómina
+
+El flujo admin opera sobre **un período a la vez**: el más reciente que siga abierto y sin transferencia — no el mes calendario. Los resultados de la nómina de agosto pueden subirse en septiembre sin problema. Un mes nuevo se abre cuando el anterior fue transferido; un período abandonado (≥2 meses atrás, sin descuentos) se cierra automáticamente. Al registrar la transferencia, el período queda inmutable y los aportes sin descuento se resuelven como "no hubo aporte ese mes" (spec §13).
+
+Los enlaces de acceso no se consumen al abrirse (los escáneres de correo corporativo hacen prefetch de los links): la página de verificación solo valida, y el ingreso real es el clic en "Continuar".
+
 ## Modelo de datos
 
 Seis entidades (`prisma/schema.prisma`): `Company`, `Employee`, `Foundation`, `DonationAuthorization`, `PayrollPeriod`, `PayrollContribution`, más `User` para auth/RBAC.

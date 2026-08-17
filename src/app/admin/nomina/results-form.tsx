@@ -33,6 +33,14 @@ export function ResultsForm() {
           Se registraron <strong>{state.applied}</strong> descuentos.
         </p>
       )}
+      {state.warnings && (
+        <ul className="space-y-1 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+          <li className="font-medium">Advertencias (revisa si son correctas):</li>
+          {state.warnings.map((warning) => (
+            <li key={warning}>{warning}</li>
+          ))}
+        </ul>
+      )}
       <Button type="submit" disabled={pending}>
         {pending ? "Registrando…" : "Registrar resultados"}
       </Button>

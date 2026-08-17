@@ -24,6 +24,14 @@ export async function createLoginToken(
   return token;
 }
 
+// Read-only validity check — does NOT consume the token. Used by the
+// verify page so that email scanners prefetching the GET can't burn the
+// single-use token; consumption only happens on the explicit POST.
+export async function peekLoginToken(token: string): Promise<boolean> {
+  const record = await db.loginToken.findUnique({ where: { tokenHash: hashToken(token) } });
+  return record !== null && record.usedAt === null && record.expiresAt >= new Date();
+}
+
 // Returns the email the token was issued for, or null if the token is
 // unknown, expired, or already used. Single use is enforced atomically:
 // the conditional updateMany means concurrent requests can't both win.

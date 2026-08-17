@@ -2,6 +2,7 @@ import {
   AuthorizationStatus,
   ContributionStatus,
   PayrollPeriodStatus,
+  type PayrollContribution,
   type PayrollPeriod,
 } from "@prisma/client";
 import { db } from "@/lib/db";
@@ -25,6 +26,16 @@ export function currentPeriodParts(now: Date = new Date()): { month: number; yea
   return { month: get("month"), year: get("year") };
 }
 
+type PeriodParts = { month: number; year: number };
+
+function monthAfter(p: PeriodParts): PeriodParts {
+  return p.month === 12 ? { month: 1, year: p.year + 1 } : { month: p.month + 1, year: p.year };
+}
+
+function compareParts(a: PeriodParts, b: PeriodParts): number {
+  return a.year * 12 + a.month - (b.year * 12 + b.month);
+}
+
 export async function getOrCreatePeriod(
   companyId: string,
   month: number,
@@ -37,6 +48,98 @@ export async function getOrCreatePeriod(
   });
 }
 
+export type OperatingPeriodResolution = {
+  month: number;
+  year: number;
+  // The persisted period the monthly flow operates on, if it exists yet.
+  period: (PayrollPeriod & { contributions: PayrollContribution[] }) | null;
+  // A past-month period that never produced deductions; closed
+  // automatically when the flow advances.
+  staleToClose: PayrollPeriod | null;
+};
+
+// The monthly flow (CSV download, results upload, transfer) operates on
+// ONE period at a time: the most recent period that is still open and
+// not yet transferred. Real payroll cycles cross calendar-month
+// boundaries — results for August are typically uploaded in early
+// September — so this must NOT be pinned to the current month. A new
+// month only opens once the previous one was transferred, closed, or
+// abandoned without deductions.
+export async function resolveOperatingPeriod(
+  companyId: string,
+  now: Date = new Date(),
+): Promise<OperatingPeriodResolution> {
+  const current = currentPeriodParts(now);
+
+  const open = await db.payrollPeriod.findFirst({
+    where: { companyId, status: PayrollPeriodStatus.OPEN, transferDate: null },
+    orderBy: [{ year: "desc" }, { month: "desc" }],
+    include: { contributions: true },
+  });
+  if (open) {
+    // A period stays operable into the following month — results and
+    // transfers for August legitimately happen in early September. Only
+    // a period ≥2 months behind with no deductions is considered
+    // abandoned and auto-closed. Periods WITH deductions never expire:
+    // money was taken from employees and must reach the foundation.
+    const monthsBehind = -compareParts({ month: open.month, year: open.year }, current);
+    const hasDeductions = open.contributions.some((c) => c.amountDeducted !== null);
+    if (monthsBehind >= 2 && !hasDeductions) {
+      return { ...current, period: null, staleToClose: open };
+    }
+    return { month: open.month, year: open.year, period: open, staleToClose: null };
+  }
+
+  const latest = await db.payrollPeriod.findFirst({
+    where: { companyId },
+    orderBy: [{ year: "desc" }, { month: "desc" }],
+  });
+  if (!latest) return { ...current, period: null, staleToClose: null };
+
+  const after = monthAfter({ month: latest.month, year: latest.year });
+  const target = compareParts(after, current) >= 0 ? after : current;
+  return { ...target, period: null, staleToClose: null };
+}
+
+// Commit variant: closes stale periods and creates the target period.
+export async function openOperatingPeriod(
+  companyId: string,
+  now: Date = new Date(),
+): Promise<PayrollPeriod> {
+  for (let i = 0; i < 24; i++) {
+    const resolution = await resolveOperatingPeriod(companyId, now);
+    if (resolution.staleToClose) {
+      await closePeriodWithoutDeductions(resolution.staleToClose.id);
+      continue;
+    }
+    if (resolution.period) return resolution.period;
+    return getOrCreatePeriod(companyId, resolution.month, resolution.year);
+  }
+  throw new PayrollError(["No se pudo resolver el período de nómina."]);
+}
+
+// A pending row in a finished period means "no hubo aporte ese mes"
+// (spec §13) — it is removed, never shown as pending forever.
+async function closePeriodWithoutDeductions(periodId: string): Promise<void> {
+  await db.$transaction([
+    db.payrollContribution.deleteMany({
+      where: { payrollPeriodId: periodId, status: ContributionStatus.AUTHORIZED },
+    }),
+    db.payrollPeriod.update({
+      where: { id: periodId },
+      data: { status: PayrollPeriodStatus.CLOSED },
+    }),
+  ]);
+}
+
+function assertPeriodProcessable(period: PayrollPeriod): void {
+  if (period.status === PayrollPeriodStatus.CLOSED || period.transferDate) {
+    throw new PayrollError([
+      "Este período ya fue transferido o cerrado y no puede modificarse.",
+    ]);
+  }
+}
+
 // Aligns the period's not-yet-processed rows with the currently ACTIVE
 // authorizations: adds new donors, updates amount changes, and removes
 // rows whose authorization was cancelled or superseded. Rows that
@@ -44,6 +147,7 @@ export async function getOrCreatePeriod(
 // runs already happened.
 export async function syncPeriodSnapshot(periodId: string): Promise<number> {
   const period = await db.payrollPeriod.findUniqueOrThrow({ where: { id: periodId } });
+  assertPeriodProcessable(period);
   const activeAuths = await db.donationAuthorization.findMany({
     where: { status: AuthorizationStatus.ACTIVE, employee: { companyId: period.companyId } },
   });
@@ -132,16 +236,20 @@ export function parsePayrollResultsCsv(
       return;
     }
     const externalId = fields[0].trim();
-    const amount = Number(fields[1].trim());
+    const rawAmount = fields[1].trim();
     if (!externalId) {
       errors.push(`Línea ${line}: employee_id vacío.`);
       return;
     }
-    if (!Number.isInteger(amount) || amount <= 0) {
-      errors.push(`Línea ${line}: amount_deducted debe ser un entero positivo.`);
+    // Digits only: "20.000" (formato es-CO de Excel) sería interpretado
+    // como 20 pesos — se rechaza en lugar de corromper los montos.
+    if (!/^\d+$/.test(rawAmount) || Number(rawAmount) <= 0) {
+      errors.push(
+        `Línea ${line}: amount_deducted debe ser un entero positivo sin puntos ni comas (ej: 20000).`,
+      );
       return;
     }
-    rows.push({ externalId, amountDeducted: amount });
+    rows.push({ externalId, amountDeducted: Number(rawAmount) });
   });
   if (rows.length === 0 && errors.length === 0) {
     errors.push("El archivo no contiene registros.");
@@ -149,12 +257,19 @@ export function parsePayrollResultsCsv(
   return { rows, errors };
 }
 
+export type PayrollResultsOutcome = { applied: number; warnings: string[] };
+
 // All-or-nothing: any invalid row rejects the whole file. Absent rows
 // simply mean no contribution that month (spec §13) — no questions.
+// Re-uploading before the transfer is allowed (corrections); after the
+// transfer the period is immutable.
 export async function applyPayrollResults(
   periodId: string,
   rows: PayrollResultRow[],
-): Promise<number> {
+): Promise<PayrollResultsOutcome> {
+  const period = await db.payrollPeriod.findUniqueOrThrow({ where: { id: periodId } });
+  assertPeriodProcessable(period);
+
   const contributions = await db.payrollContribution.findMany({
     where: { payrollPeriodId: periodId },
     include: { employee: true },
@@ -162,6 +277,7 @@ export async function applyPayrollResults(
   const byExternalId = new Map(contributions.map((c) => [c.employee.externalId, c]));
 
   const errors: string[] = [];
+  const warnings: string[] = [];
   const seen = new Set<string>();
   for (const row of rows) {
     if (seen.has(row.externalId)) {
@@ -172,11 +288,10 @@ export async function applyPayrollResults(
     const contribution = byExternalId.get(row.externalId);
     if (!contribution) {
       errors.push(`employee_id sin autorización en este período: ${row.externalId}`);
-    } else if (
-      contribution.status === ContributionStatus.TRANSFERRED ||
-      contribution.status === ContributionStatus.RECEIVED
-    ) {
-      errors.push(`el aporte de ${row.externalId} ya fue transferido; no puede modificarse`);
+    } else if (contribution.amountAuthorized !== row.amountDeducted) {
+      warnings.push(
+        `${row.externalId} (${contribution.employee.name}): descontado ${row.amountDeducted} difiere del autorizado ${contribution.amountAuthorized}.`,
+      );
     }
   }
   if (errors.length > 0) throw new PayrollError(errors);
@@ -189,7 +304,7 @@ export async function applyPayrollResults(
       }),
     ),
   );
-  return rows.length;
+  return { applied: rows.length, warnings };
 }
 
 export async function registerPeriodTransfer(
@@ -219,6 +334,12 @@ export async function registerPeriodTransfer(
     db.payrollContribution.updateMany({
       where: { payrollPeriodId: periodId, status: ContributionStatus.DEDUCTED },
       data: { status: ContributionStatus.TRANSFERRED },
+    }),
+    // Once the money left, a still-pending row means "no hubo aporte
+    // ese mes" (spec §13): remove it instead of showing it as pending
+    // forever.
+    db.payrollContribution.deleteMany({
+      where: { payrollPeriodId: periodId, status: ContributionStatus.AUTHORIZED },
     }),
   ]);
 }

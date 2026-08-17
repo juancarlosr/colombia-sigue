@@ -7,12 +7,11 @@ import { importEmployees, parseEmployeeCsv } from "@/lib/employee-import";
 import { sendPendingInvitations } from "@/lib/invitations";
 import {
   applyPayrollResults,
-  currentPeriodParts,
   parsePayrollResultsCsv,
   PayrollError,
   registerPeriodTransfer,
+  resolveOperatingPeriod,
 } from "@/lib/payroll";
-import { db } from "@/lib/db";
 
 const MAX_FILE_BYTES = 1_000_000;
 
@@ -57,7 +56,7 @@ export async function sendInvitationsAction(): Promise<InviteState> {
   return { sent };
 }
 
-export type ResultsState = { errors?: string[]; applied?: number };
+export type ResultsState = { errors?: string[]; warnings?: string[]; applied?: number };
 
 export async function uploadPayrollResultsAction(
   _prev: ResultsState,
@@ -71,18 +70,18 @@ export async function uploadPayrollResultsAction(
   const { rows, errors } = parsePayrollResultsCsv(text!);
   if (errors.length > 0) return { errors };
 
-  const { month, year } = currentPeriodParts();
-  const period = await db.payrollPeriod.findUnique({
-    where: { companyId_year_month: { companyId: company.id, year, month } },
-  });
-  if (!period) {
+  const resolution = await resolveOperatingPeriod(company.id);
+  if (!resolution.period) {
     return { errors: ["Primero descarga el CSV de nómina para crear el período."] };
   }
 
   try {
-    const applied = await applyPayrollResults(period.id, rows);
+    const outcome = await applyPayrollResults(resolution.period.id, rows);
     revalidatePath("/admin");
-    return { applied };
+    return {
+      applied: outcome.applied,
+      warnings: outcome.warnings.length > 0 ? outcome.warnings : undefined,
+    };
   } catch (e) {
     if (e instanceof PayrollError) return { errors: e.errors };
     throw e;
@@ -112,16 +111,13 @@ export async function registerTransferAction(
     return { errors: parsed.error.issues.map((i) => i.message) };
   }
 
-  const { month, year } = currentPeriodParts();
-  const period = await db.payrollPeriod.findUnique({
-    where: { companyId_year_month: { companyId: company.id, year, month } },
-  });
-  if (!period) {
-    return { errors: ["Primero descarga el CSV de nómina para crear el período."] };
+  const resolution = await resolveOperatingPeriod(company.id);
+  if (!resolution.period) {
+    return { errors: ["Primero descarga el CSV de nómina y registra los resultados."] };
   }
 
   try {
-    await registerPeriodTransfer(period.id, {
+    await registerPeriodTransfer(resolution.period.id, {
       amount: parsed.data.amount,
       date: new Date(`${parsed.data.date}T12:00:00-05:00`),
       bankReference: parsed.data.bankReference,

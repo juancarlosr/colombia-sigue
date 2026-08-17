@@ -3,19 +3,26 @@ import { UserRole } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
+import { getPilotMetrics } from "@/lib/metrics";
 import { formatCop, formatPeriod } from "@/lib/format";
 import { MarkReceivedButton } from "./mark-received-button";
+
+function formatRate(rate: number | null): string {
+  return rate === null ? "—" : `${Math.round(rate * 100)}%`;
+}
 
 export default async function PlatformHomePage() {
   await requireRole(UserRole.PLATFORM_ADMIN);
 
-  const [foundation, periods] = await Promise.all([
+  const [foundation, periods, company] = await Promise.all([
     db.foundation.findFirst(),
     db.payrollPeriod.findMany({
       include: { company: true, contributions: true },
       orderBy: [{ year: "desc" }, { month: "desc" }],
     }),
+    db.company.findFirst(),
   ]);
+  const metrics = company ? await getPilotMetrics(company.id) : null;
 
   return (
     <div className="space-y-8">
@@ -35,6 +42,36 @@ export default async function PlatformHomePage() {
           </p>
         )}
       </section>
+
+      {metrics && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Métricas del piloto</h2>
+          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {[
+              ["Empleados invitados", String(metrics.invited)],
+              ["Tasa de activación", formatRate(metrics.activationRate)],
+              [
+                "Aporte promedio",
+                metrics.averageContribution === null
+                  ? "—"
+                  : `${formatCop(Math.round(metrics.averageContribution))} / mes`,
+              ],
+              ["Tasa de primer descuento", formatRate(metrics.firstDeductionRate)],
+              ["Retención a 3 meses", formatRate(metrics.threeMonthRetention)],
+              ["Total recibido por la fundación", formatCop(metrics.totalReceived)],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-xl border bg-card p-4">
+                <dt className="text-sm text-muted-foreground">{label}</dt>
+                <dd className="text-xl font-semibold">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-xs text-muted-foreground">
+            La métrica principal del piloto es la retención a 3 meses: % de donantes del primer
+            mes con descuentos que siguen aportando en el tercer mes.
+          </p>
+        </section>
+      )}
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Períodos de nómina</h2>
