@@ -9,7 +9,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 <!-- END:nextjs-agent-rules -->
 # Agent Guide — Colombia Sigue
 
-Payroll-giving MVP for Colombia. Employees authorize a voluntary monthly payroll deduction; the company deducts and transfers directly to one foundation; **the platform never touches money** — it records authorizations and makes the flow traceable. The product spec (ground truth for any audit) is [docs/payroll_giving_mvp_prompt.md](docs/payroll_giving_mvp_prompt.md) — 31 sections, in Spanish.
+Payroll-giving MVP for Colombia. Employees authorize a voluntary monthly payroll deduction; the company deducts and transfers directly to one foundation; **the platform never touches money** — it records authorizations and makes the flow traceable. The product spec (ground truth for any audit) is [docs/payroll_giving_mvp_prompt.md](docs/payroll_giving_mvp_prompt.md) — 32 sections, in Spanish (§32 is the post-v0 change log).
 
 ## Run it locally
 
