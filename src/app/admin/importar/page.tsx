@@ -1,14 +1,8 @@
 import Link from "next/link";
-import { EmployeeStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireCompanyAdmin } from "@/lib/auth/company-admin";
+import { EMPLOYEE_STATUS_LABELS } from "@/lib/labels";
 import { ImportForm } from "./import-form";
-
-const STATUS_LABELS: Record<EmployeeStatus, string> = {
-  IMPORTED: "Importado",
-  INVITED: "Invitado",
-  ACTIVATED: "Activo",
-};
 
 export default async function ImportPage() {
   const { company } = await requireCompanyAdmin();
@@ -46,7 +40,7 @@ export default async function ImportPage() {
                   <td className="p-3">{employee.externalId}</td>
                   <td className="p-3">{employee.name}</td>
                   <td className="p-3">{employee.email}</td>
-                  <td className="p-3">{STATUS_LABELS[employee.status]}</td>
+                  <td className="p-3">{EMPLOYEE_STATUS_LABELS[employee.status]}</td>
                 </tr>
               ))}
             </tbody>

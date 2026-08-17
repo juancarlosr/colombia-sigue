@@ -3,26 +3,21 @@ import { UserRole } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
-import { getPilotMetrics } from "@/lib/metrics";
+import { getCompaniesOverview } from "@/lib/company-overview";
 import { formatCop, formatPeriod } from "@/lib/format";
 import { MarkReceivedButton } from "./mark-received-button";
-
-function formatRate(rate: number | null): string {
-  return rate === null ? "—" : `${Math.round(rate * 100)}%`;
-}
 
 export default async function PlatformHomePage() {
   await requireRole(UserRole.PLATFORM_ADMIN);
 
-  const [foundation, periods, company] = await Promise.all([
+  const [foundation, companies, periods] = await Promise.all([
     db.foundation.findFirst(),
+    getCompaniesOverview(),
     db.payrollPeriod.findMany({
       include: { company: true, contributions: true },
       orderBy: [{ year: "desc" }, { month: "desc" }],
     }),
-    db.company.findFirst(),
   ]);
-  const metrics = company ? await getPilotMetrics(company.id) : null;
 
   return (
     <div className="space-y-8">
@@ -43,35 +38,53 @@ export default async function PlatformHomePage() {
         )}
       </section>
 
-      {metrics && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Métricas del piloto</h2>
-          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            {[
-              ["Empleados invitados", String(metrics.invited)],
-              ["Tasa de activación", formatRate(metrics.activationRate)],
-              [
-                "Aporte promedio",
-                metrics.averageContribution === null
-                  ? "—"
-                  : `${formatCop(Math.round(metrics.averageContribution))} / mes`,
-              ],
-              ["Tasa de primer descuento", formatRate(metrics.firstDeductionRate)],
-              ["Retención a 3 meses", formatRate(metrics.threeMonthRetention)],
-              ["Total recibido por la fundación", formatCop(metrics.totalReceived)],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-xl border bg-card p-4">
-                <dt className="text-sm text-muted-foreground">{label}</dt>
-                <dd className="text-xl font-semibold">{value}</dd>
-              </div>
-            ))}
-          </dl>
-          <p className="text-xs text-muted-foreground">
-            La métrica principal del piloto es la retención a 3 meses: % de donantes del primer
-            mes con descuentos que siguen aportando en el tercer mes.
-          </p>
-        </section>
-      )}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Empresas inscritas ({companies.length})</h2>
+        <div className="overflow-x-auto rounded-xl border bg-card">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-muted-foreground">
+                <th className="p-3 font-medium">Empresa</th>
+                <th className="p-3 text-right font-medium">Empleados</th>
+                <th className="p-3 text-right font-medium">Activados</th>
+                <th className="p-3 text-right font-medium">Donantes activos</th>
+                <th className="p-3 text-right font-medium">Autorizado / mes</th>
+                <th className="p-3 text-right font-medium">Donado total</th>
+                <th className="p-3 font-medium"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {companies.map((company) => (
+                <tr key={company.id} className="border-b last:border-0">
+                  <td className="p-3">
+                    <p className="font-medium">{company.name}</p>
+                    <p className="text-xs text-muted-foreground">NIT {company.nit}</p>
+                  </td>
+                  <td className="p-3 text-right">{company.employeesTotal}</td>
+                  <td className="p-3 text-right">{company.employeesActivated}</td>
+                  <td className="p-3 text-right">{company.activeDonors}</td>
+                  <td className="p-3 text-right">{formatCop(company.monthlyAuthorized)}</td>
+                  <td className="p-3 text-right font-medium">
+                    {formatCop(company.totalDeducted)}
+                  </td>
+                  <td className="p-3">
+                    <Link
+                      href={`/platform/empresas/${company.id}`}
+                      className="text-sm underline underline-offset-2"
+                    >
+                      Ver detalle
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Donado total suma los descuentos de nómina realmente aplicados. El detalle por mes y
+          las métricas del piloto están en cada empresa.
+        </p>
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Períodos de nómina</h2>
@@ -98,7 +111,14 @@ export default async function PlatformHomePage() {
                   return (
                     <tr key={period.id} className="border-b align-top last:border-0">
                       <td className="p-3">{formatPeriod(period.month, period.year)}</td>
-                      <td className="p-3">{period.company.name}</td>
+                      <td className="p-3">
+                        <Link
+                          href={`/platform/empresas/${period.companyId}`}
+                          className="underline underline-offset-2"
+                        >
+                          {period.company.name}
+                        </Link>
+                      </td>
                       <td className="p-3 text-right">{formatCop(totalDeducted)}</td>
                       <td className="p-3">
                         {period.transferDate
