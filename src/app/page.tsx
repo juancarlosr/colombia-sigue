@@ -80,13 +80,12 @@ export default function LandingPage() {
         {/* Por qué existimos */}
         <section className="mx-auto max-w-3xl py-20 text-center sm:py-24">
           <h2 className="text-3xl leading-snug font-bold tracking-tight text-balance sm:text-4xl">
-            La gente quiere ayudar. Lo que no quiere es dejar su tarjeta de crédito{" "}
-            <span className="text-sky-600 dark:text-sky-400">en un sitio web más</span>.
+            Ayudar debería ser <span className="text-sky-600 dark:text-sky-400">así de fácil</span>.
           </h2>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            Por eso nacimos: tu aporte sale directo de tu nómina. Lo autorizas una vez, tu
-            empresa lo descuenta con tu sueldo y lo transfiere a la fundación. Sin tarjetas, sin
-            suscripciones, sin intermediarios que toquen la plata.
+            Eliges cuánto aportar, lo autorizas una vez y tu empresa lo descuenta de tu nómina y
+            lo gira directamente a la fundación. Sin tarjetas, sin cobros recurrentes y sin que
+            nosotros toquemos la plata.
           </p>
         </section>
 
