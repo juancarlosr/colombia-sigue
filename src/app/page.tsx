@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { BrandWordmark } from "@/components/brand";
+import { MarketingFooter, MarketingHeader } from "@/components/marketing";
 
 const STEPS = [
   {
@@ -40,12 +40,7 @@ const TRUST = [
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-6">
-        <BrandWordmark />
-        <Button render={<Link href="/login" />} variant="outline" size="sm">
-          Ingresar
-        </Button>
-      </header>
+      <MarketingHeader />
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 pb-20">
         <section className="relative overflow-hidden rounded-[2.5rem] rounded-bl-[6rem] bg-gradient-to-br from-primary to-lime-300 px-8 py-16 sm:px-14 sm:py-20 dark:to-lime-600">
@@ -77,10 +72,51 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Split: cada quien a su camino */}
+        <section className="mt-8 grid gap-6 sm:grid-cols-2">
+          <Link
+            href="/login"
+            className="group space-y-3 rounded-3xl bg-accent p-8 text-accent-foreground transition-shadow hover:shadow-lg"
+          >
+            <p className="text-xs font-bold tracking-widest text-sky-700 uppercase dark:text-sky-300">
+              Soy empleado
+            </p>
+            <h2 className="text-2xl font-bold tracking-tight">
+              Recibí una invitación o ya tengo mi aporte
+            </h2>
+            <p className="text-sm leading-relaxed">
+              Entra con tu correo corporativo — sin contraseñas. Ve tu aporte, cámbialo o
+              cancélalo cuando quieras.
+            </p>
+            <span className="inline-block font-semibold underline-offset-4 group-hover:underline">
+              Ingresar →
+            </span>
+          </Link>
+          <Link
+            href="/empresas"
+            className="group space-y-3 rounded-3xl border-2 border-primary/40 bg-card p-8 transition-shadow hover:shadow-lg"
+          >
+            <p className="text-xs font-bold tracking-widest text-lime-700 uppercase dark:text-lime-400">
+              Soy empresa
+            </p>
+            <h2 className="text-2xl font-bold tracking-tight">
+              Quiero que mi equipo pueda aportar
+            </h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Registra tu empresa, invita a tu equipo y opera todo en minutos al mes. Sin tocar
+              la plata, sin integraciones.
+            </p>
+            <span className="inline-block font-semibold underline-offset-4 group-hover:underline">
+              Cómo funciona para empresas →
+            </span>
+          </Link>
+        </section>
+
         {/* Por qué existimos */}
         <section className="mx-auto max-w-3xl py-20 text-center sm:py-24">
           <h2 className="text-3xl leading-snug font-bold tracking-tight text-balance sm:text-4xl">
-            Ayudar debería ser <span className="text-sky-600 dark:text-sky-400">así de fácil</span>.
+            Ayudar debería ser{" "}
+            <span className="text-sky-600 dark:text-sky-400">así de fácil</span>.
           </h2>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
             Eliges cuánto aportar, lo autorizas una vez y tu empresa lo descuenta de tu nómina y
@@ -91,7 +127,7 @@ export default function LandingPage() {
 
         <section className="space-y-6">
           <h2 className="text-center text-sm font-bold tracking-widest text-muted-foreground uppercase">
-            Cómo funciona
+            Cómo funciona para ti
           </h2>
           <div className="grid gap-6 sm:grid-cols-3">
             {STEPS.map((step, index) => (
@@ -132,33 +168,14 @@ export default function LandingPage() {
           </h2>
           <p className="mx-auto mt-3 max-w-xl">
             El piloto está abierto a empresas que quieran facilitar la generosidad de su equipo.
-            Pronto habrá más información para inscribirse.
           </p>
+          <Button render={<Link href="/empresas" />} className="mt-5">
+            Conoce cómo funciona para empresas
+          </Button>
         </section>
       </main>
 
-      <footer className="border-t">
-        <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="space-y-2">
-              <BrandWordmark />
-              <p className="text-sm text-muted-foreground">
-                Ayuda todos los meses directamente desde tu nómina.
-              </p>
-            </div>
-            <Button render={<Link href="/login" />} variant="outline" size="sm">
-              Ingresar
-            </Button>
-          </div>
-          <p className="max-w-3xl text-xs text-muted-foreground">
-            Colombia Sigue no recibe ni procesa dinero: tu empresa realiza el descuento por
-            nómina y transfiere directamente a la fundación. Aquí solo registras tu autorización
-            voluntaria — que puedes modificar o revocar cuando quieras — y sigues el estado de
-            tus aportes.
-          </p>
-          <p className="text-xs text-muted-foreground">Piloto 2026</p>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }
