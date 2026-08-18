@@ -13,7 +13,7 @@ const COMPANY_STEPS = [
   {
     title: "Inscribe tu empresa",
     description:
-      "Te configuramos en el piloto y defines quién administra: una persona de RRHH o administrativa es suficiente.",
+      "Te configuramos en la plataforma y defines quién administra: una persona de RRHH o administrativa es suficiente.",
   },
   {
     title: "Importa e invita a tu equipo",
@@ -76,14 +76,15 @@ export default function CompaniesPage() {
               <strong className="font-extrabold">Dale el canal.</strong>
             </h1>
             <p className="max-w-xl text-lg">
-              Tus empleados aportan desde su nómina a una fundación. Tú solo ejecutas el
-              descuento y giras directo — la plataforma nunca toca la plata.
+              Tus empleados aportan desde su nómina para apoyar a los afectados del terremoto en
+              Colombia. Tú solo ejecutas el descuento y giras directo a la fundación — la
+              plataforma nunca toca la plata.
             </p>
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <Button render={<a href="mailto:juan@celerik.com?subject=Quiero%20llevar%20Colombia%20Sigue%20a%20mi%20empresa" />} size="lg">
                 Escríbenos
               </Button>
-              <span className="text-sm font-medium">Piloto abierto · Sin costo</span>
+              <span className="text-sm font-medium">Sin costo para tu empresa</span>
             </div>
           </div>
         </section>

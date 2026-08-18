@@ -46,13 +46,16 @@ export function MarketingFooter() {
             </Button>
           </nav>
         </div>
+        <p className="max-w-3xl text-sm text-muted-foreground">
+          Hoy los aportes apoyan la reconstrucción de viviendas y escuelas en las comunidades
+          afectadas por el terremoto en Colombia.
+        </p>
         <p className="max-w-3xl text-xs text-muted-foreground">
           Colombia Sigue no recibe ni procesa dinero: tu empresa realiza el descuento por nómina
           y transfiere directamente a la fundación. Aquí solo registras tu autorización
           voluntaria — que puedes modificar o revocar cuando quieras — y sigues el estado de tus
           aportes.
         </p>
-        <p className="text-xs text-muted-foreground">Piloto 2026</p>
       </div>
     </footer>
   );

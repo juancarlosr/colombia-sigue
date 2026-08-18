@@ -50,7 +50,7 @@ export default function LandingPage() {
           />
           <div className="relative max-w-2xl space-y-6 text-primary-foreground">
             <p className="inline-block rounded-full bg-white/60 px-4 py-1 text-xs font-bold tracking-wide uppercase dark:bg-white/20">
-              Payroll giving en Colombia
+              Por los afectados del terremoto en Colombia
             </p>
             <h1 className="text-4xl leading-tight font-medium tracking-tight text-balance sm:text-6xl">
               Ayuda todos los meses{" "}
@@ -167,7 +167,8 @@ export default function LandingPage() {
             ¿Tu empresa todavía no participa?
           </h2>
           <p className="mx-auto mt-3 max-w-xl">
-            El piloto está abierto a empresas que quieran facilitar la generosidad de su equipo.
+            Estamos abiertos a empresas que quieran facilitar la generosidad de su equipo con
+            los afectados del terremoto.
           </p>
           <Button render={<Link href="/empresas" />} className="mt-5">
             Conoce cómo funciona para empresas
