@@ -13,7 +13,12 @@ export function InviteButton({ pendingCount }: { pendingCount: number }) {
   );
 
   if (state.sent !== undefined) {
-    return <p className="text-sm text-muted-foreground">Invitaciones enviadas: {state.sent}</p>;
+    return (
+      <p className="text-sm text-muted-foreground">
+        Invitaciones enviadas: {state.sent}
+        {state.failed ? ` · fallaron ${state.failed} (revisa el proveedor de correo)` : ""}
+      </p>
+    );
   }
 
   return (

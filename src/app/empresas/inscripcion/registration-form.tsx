@@ -31,15 +31,25 @@ const FIELDS = [
 export function RegistrationForm({ agreementText }: { agreementText: string }) {
   const [state, formAction, pending] = useActionState(registerCompanyAction, initialState);
   const [accepted, setAccepted] = useState(false);
+  // Campos controlados: React 19 resetea los formularios no controlados
+  // tras cada action — un error del servidor no debe borrar lo escrito.
+  const [values, setValues] = useState<Record<string, string>>({});
 
   if (state.ok) {
     return (
       <div className="space-y-3 rounded-2xl border bg-card p-6">
         <h2 className="text-xl font-bold">Solicitud recibida ✓</h2>
-        <p className="text-muted-foreground">
-          Te enviamos un correo para verificar la solicitud. Después de la verificación la
-          revisamos y te contactamos — normalmente en un día hábil.
-        </p>
+        {state.emailSent === false ? (
+          <p className="text-muted-foreground">
+            Registramos tu solicitud, pero no pudimos enviarte el correo de verificación. No te
+            preocupes: la revisaremos y te contactaremos directamente.
+          </p>
+        ) : (
+          <p className="text-muted-foreground">
+            Te enviamos un correo para verificar la solicitud. Después de la verificación la
+            revisamos y te contactamos — normalmente en un día hábil.
+          </p>
+        )}
       </div>
     );
   }
@@ -59,6 +69,10 @@ export function RegistrationForm({ agreementText }: { agreementText: string }) {
               placeholder={field.placeholder}
               type={"type" in field ? field.type : "text"}
               min={"type" in field && field.type === "number" ? 1 : undefined}
+              value={values[field.name] ?? ""}
+              onChange={(e) =>
+                setValues((current) => ({ ...current, [field.name]: e.target.value }))
+              }
               required
             />
           </div>

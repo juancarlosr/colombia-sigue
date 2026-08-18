@@ -19,7 +19,7 @@ export function CompanyRequestActions({ companyId }: { companyId: string }) {
     rejectCompanyAction,
     initialState,
   );
-  const error = approveState.error ?? rejectState.error;
+  const error = approveState.error ?? rejectState.error ?? approveState.warning;
 
   return (
     <div className="space-y-1">

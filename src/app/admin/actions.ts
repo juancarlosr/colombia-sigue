@@ -47,13 +47,13 @@ export async function importEmployeesAction(
   return { created: result.created };
 }
 
-export type InviteState = { sent?: number };
+export type InviteState = { sent?: number; failed?: number };
 
 export async function sendInvitationsAction(): Promise<InviteState> {
   const { company } = await requireCompanyAdmin();
-  const sent = await sendPendingInvitations(company.id);
+  const { sent, failed } = await sendPendingInvitations(company.id);
   revalidatePath("/admin");
-  return { sent };
+  return { sent, failed };
 }
 
 export type ResultsState = { errors?: string[]; warnings?: string[]; applied?: number };

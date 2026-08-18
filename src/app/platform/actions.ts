@@ -14,7 +14,7 @@ import {
 import { sendCompanyWelcomeEmail } from "@/lib/mailer";
 import { markPeriodReceived, PayrollError } from "@/lib/payroll";
 
-export type CompanyRequestState = { error?: string; ok?: boolean };
+export type CompanyRequestState = { error?: string; warning?: string; ok?: boolean };
 
 export async function approveCompanyAction(
   _prev: CompanyRequestState,
@@ -24,21 +24,29 @@ export async function approveCompanyAction(
   const companyId = String(formData.get("companyId") ?? "");
   if (!companyId) return { error: "Solicitud inválida." };
 
+  let warning: string | undefined;
   try {
     const company = await approveCompany(companyId);
-    const token = await createLoginToken(company.contactEmail!, INVITATION_TOKEN_TTL_MS);
-    const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
-    await sendCompanyWelcomeEmail(
-      company.contactEmail!,
-      `${baseUrl}/auth/verify?token=${token}`,
-      company.name,
-    );
+    // La empresa ya quedó activa: si el correo de bienvenida falla, se
+    // reporta pero no se revierte nada.
+    try {
+      const token = await createLoginToken(company.contactEmail!, INVITATION_TOKEN_TTL_MS);
+      const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
+      await sendCompanyWelcomeEmail(
+        company.contactEmail!,
+        `${baseUrl}/auth/verify?token=${token}`,
+        company.name,
+      );
+    } catch (emailError) {
+      console.error("[aprobación] fallo enviando bienvenida:", emailError);
+      warning = `Empresa aprobada, pero el correo de bienvenida a ${company.contactEmail} falló. Genera un enlace de acceso manualmente.`;
+    }
   } catch (e) {
     if (e instanceof RegistrationError) return { error: e.message };
     throw e;
   }
   revalidatePath("/platform");
-  return { ok: true };
+  return { ok: true, warning };
 }
 
 export async function rejectCompanyAction(

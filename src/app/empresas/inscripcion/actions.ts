@@ -10,7 +10,7 @@ import {
 } from "@/lib/company-registration";
 import { sendCompanyVerificationEmail } from "@/lib/mailer";
 
-export type RegisterCompanyState = { errors?: string[]; ok?: boolean };
+export type RegisterCompanyState = { errors?: string[]; ok?: boolean; emailSent?: boolean };
 
 export async function registerCompanyAction(
   _prev: RegisterCompanyState,
@@ -37,13 +37,21 @@ export async function registerCompanyAction(
       userAgent: requestHeaders.get("user-agent"),
     });
 
-    const token = await createLoginToken(company.contactEmail!, INVITATION_TOKEN_TTL_MS);
-    const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
-    await sendCompanyVerificationEmail(
-      company.contactEmail!,
-      `${baseUrl}/empresas/verificar?token=${token}`,
-    );
-    return { ok: true };
+    // El registro ya quedó guardado: un fallo del proveedor de correo no
+    // debe convertirse en un error para el solicitante.
+    let emailSent = true;
+    try {
+      const token = await createLoginToken(company.contactEmail!, INVITATION_TOKEN_TTL_MS);
+      const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
+      await sendCompanyVerificationEmail(
+        company.contactEmail!,
+        `${baseUrl}/empresas/verificar?token=${token}`,
+      );
+    } catch (emailError) {
+      console.error("[registro] fallo enviando verificación:", emailError);
+      emailSent = false;
+    }
+    return { ok: true, emailSent };
   } catch (e) {
     if (e instanceof RegistrationError) return { errors: e.errors };
     throw e;
