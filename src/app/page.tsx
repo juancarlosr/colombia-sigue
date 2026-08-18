@@ -19,6 +19,24 @@ const STEPS = [
   },
 ];
 
+const TRUST = [
+  {
+    title: "Sin tarjetas ni datos bancarios",
+    description:
+      "Nunca te pedimos información financiera. La plataforma no recibe ni procesa dinero.",
+  },
+  {
+    title: "Tú decides, siempre",
+    description:
+      "Cambia el monto o cancela tu aporte en un clic. Sin correos, sin llamadas, sin aprobaciones.",
+  },
+  {
+    title: "Trazable de punta a punta",
+    description:
+      "Cada aporte se registra: descontado por tu empresa, transferido y confirmado por la fundación.",
+  },
+];
+
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col">
@@ -29,7 +47,7 @@ export default function LandingPage() {
         </Button>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 pb-16">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 pb-20">
         <section className="relative overflow-hidden rounded-[2.5rem] rounded-bl-[6rem] bg-gradient-to-br from-primary to-lime-300 px-8 py-16 sm:px-14 sm:py-20 dark:to-lime-600">
           <div
             aria-hidden="true"
@@ -40,7 +58,8 @@ export default function LandingPage() {
               Payroll giving en Colombia
             </p>
             <h1 className="text-4xl leading-tight font-medium tracking-tight text-balance sm:text-6xl">
-              Ayuda todos los meses <strong className="font-extrabold">directamente desde tu nómina</strong>.
+              Ayuda todos los meses{" "}
+              <strong className="font-extrabold">directamente desde tu nómina</strong>.
             </h1>
             <p className="max-w-xl text-lg sm:text-xl">
               Elige cuánto aportar, autoriza el descuento y detén tu aporte cuando quieras.
@@ -53,44 +72,92 @@ export default function LandingPage() {
               >
                 Quiero participar
               </Button>
-              <span className="text-sm font-medium">
-                Sin tarjetas · Cancela cuando quieras
-              </span>
+              <span className="text-sm font-medium">Sin tarjetas · Cancela cuando quieras</span>
             </div>
           </div>
         </section>
 
-        <section className="mt-14 grid gap-6 sm:grid-cols-3">
-          {STEPS.map((step, index) => (
-            <div
-              key={step.title}
-              className="space-y-3 rounded-3xl bg-accent p-7 text-accent-foreground"
-            >
-              <span className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">
-                {index + 1}
-              </span>
-              <h2 className="text-lg font-bold">{step.title}</h2>
-              <p className="text-sm leading-relaxed">{step.description}</p>
-            </div>
-          ))}
+        {/* Por qué existimos */}
+        <section className="mx-auto max-w-3xl py-20 text-center sm:py-24">
+          <h2 className="text-3xl leading-snug font-bold tracking-tight text-balance sm:text-4xl">
+            La gente quiere ayudar. Lo que no quiere es dejar su tarjeta de crédito{" "}
+            <span className="text-sky-600 dark:text-sky-400">en un sitio web más</span>.
+          </h2>
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+            Por eso nacimos: tu aporte sale directo de tu nómina. Lo autorizas una vez, tu
+            empresa lo descuenta con tu sueldo y lo transfiere a la fundación. Sin tarjetas, sin
+            suscripciones, sin intermediarios que toquen la plata.
+          </p>
         </section>
 
-        <section className="mt-14 space-y-3 text-center">
-          <p className="text-muted-foreground">
-            ¿Tu empresa todavía no participa? Pronto habrá más información.
-          </p>
-          <p className="mx-auto max-w-2xl text-xs text-muted-foreground">
-            Colombia Sigue no recibe ni procesa dinero: tu empresa realiza el descuento por
-            nómina y transfiere directamente a la fundación. Aquí solo registras tu autorización
-            voluntaria y sigues el estado de tus aportes.
+        <section className="space-y-6">
+          <h2 className="text-center text-sm font-bold tracking-widest text-muted-foreground uppercase">
+            Cómo funciona
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-3">
+            {STEPS.map((step, index) => (
+              <div
+                key={step.title}
+                className="space-y-3 rounded-3xl bg-accent p-7 text-accent-foreground"
+              >
+                <span className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">
+                  {index + 1}
+                </span>
+                <h3 className="text-lg font-bold">{step.title}</h3>
+                <p className="text-sm leading-relaxed">{step.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-16 space-y-6">
+          <h2 className="text-center text-sm font-bold tracking-widest text-muted-foreground uppercase">
+            Pensado para que confíes
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-3">
+            {TRUST.map((item) => (
+              <div key={item.title} className="space-y-3 rounded-3xl border bg-card p-7">
+                <span className="block size-3 rounded-full bg-primary" aria-hidden="true" />
+                <h3 className="text-lg font-bold">{item.title}</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {item.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-20 rounded-3xl bg-accent p-10 text-center text-accent-foreground">
+          <h2 className="text-2xl font-bold tracking-tight">
+            ¿Tu empresa todavía no participa?
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl">
+            El piloto está abierto a empresas que quieran facilitar la generosidad de su equipo.
+            Pronto habrá más información para inscribirse.
           </p>
         </section>
       </main>
 
       <footer className="border-t">
-        <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-6 text-sm text-muted-foreground">
-          <BrandWordmark />
-          <span>Piloto 2026</span>
+        <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-2">
+              <BrandWordmark />
+              <p className="text-sm text-muted-foreground">
+                Ayuda todos los meses directamente desde tu nómina.
+              </p>
+            </div>
+            <Button render={<Link href="/login" />} variant="outline" size="sm">
+              Ingresar
+            </Button>
+          </div>
+          <p className="max-w-3xl text-xs text-muted-foreground">
+            Colombia Sigue no recibe ni procesa dinero: tu empresa realiza el descuento por
+            nómina y transfiere directamente a la fundación. Aquí solo registras tu autorización
+            voluntaria — que puedes modificar o revocar cuando quieras — y sigues el estado de
+            tus aportes.
+          </p>
+          <p className="text-xs text-muted-foreground">Piloto 2026</p>
         </div>
       </footer>
     </div>
