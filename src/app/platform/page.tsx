@@ -1,19 +1,24 @@
 import Link from "next/link";
-import { UserRole } from "@prisma/client";
+import { CompanyStatus, UserRole } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { getCompaniesOverview } from "@/lib/company-overview";
 import { formatCop, formatPeriod } from "@/lib/format";
 import { SortableTable } from "@/components/sortable-table";
+import { CompanyRequestActions } from "./company-request-actions";
 import { MarkReceivedButton } from "./mark-received-button";
 
 export default async function PlatformHomePage() {
   await requireRole(UserRole.PLATFORM_ADMIN);
 
-  const [foundation, companies, periods] = await Promise.all([
+  const [foundation, companies, pendingRequests, periods] = await Promise.all([
     db.foundation.findFirst(),
     getCompaniesOverview(),
+    db.company.findMany({
+      where: { status: CompanyStatus.PENDING },
+      orderBy: { createdAt: "asc" },
+    }),
     db.payrollPeriod.findMany({
       include: { company: true, contributions: true },
       orderBy: [{ year: "desc" }, { month: "desc" }],
@@ -38,6 +43,48 @@ export default async function PlatformHomePage() {
           </p>
         )}
       </section>
+
+      {pendingRequests.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">
+            Solicitudes de empresas ({pendingRequests.length})
+          </h2>
+          <ul className="divide-y rounded-lg border bg-card">
+            {pendingRequests.map((request) => (
+              <li
+                key={request.id}
+                className="flex flex-wrap items-center justify-between gap-4 px-4 py-3"
+              >
+                <div className="space-y-0.5 text-sm">
+                  <p className="font-semibold">
+                    {request.name}{" "}
+                    <span className="font-normal text-muted-foreground">
+                      · {request.legalName} · NIT {request.nit}
+                    </span>
+                  </p>
+                  <p className="text-muted-foreground">
+                    {request.contactName} ({request.contactRole}) · {request.contactEmail} ·{" "}
+                    ~{request.employeeEstimate} empleados
+                  </p>
+                  <p className="text-xs">
+                    {request.emailVerifiedAt ? (
+                      <span className="font-medium text-green-700 dark:text-green-400">
+                        Correo verificado
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        Correo sin verificar todavía
+                      </span>
+                    )}{" "}
+                    · Acuerdo {request.agreementTextVersion} aceptado
+                  </p>
+                </div>
+                <CompanyRequestActions companyId={request.id} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Empresas inscritas ({companies.length})</h2>

@@ -13,7 +13,7 @@ const COMPANY_STEPS = [
   {
     title: "Inscribe tu empresa",
     description:
-      "Te configuramos en la plataforma y defines quién administra: una persona de RRHH o administrativa es suficiente.",
+      "Diligencia el formulario con el NIT y el responsable que administrará (una persona de RRHH es suficiente). Revisamos y aprobamos, normalmente en un día hábil.",
   },
   {
     title: "Importa e invita a tu equipo",
@@ -81,8 +81,8 @@ export default function CompaniesPage() {
               plataforma nunca toca la plata.
             </p>
             <div className="flex flex-wrap items-center gap-4 pt-2">
-              <Button render={<a href="mailto:juan@celerik.com?subject=Quiero%20llevar%20Colombia%20Sigue%20a%20mi%20empresa" />} size="lg">
-                Escríbenos
+              <Button render={<Link href="/empresas/inscripcion" />} size="lg">
+                Inscribe tu empresa
               </Button>
               <span className="text-sm font-medium">Sin costo para tu empresa</span>
             </div>
@@ -142,11 +142,18 @@ export default function CompaniesPage() {
             ))}
           </ul>
           <div className="pt-2 text-center">
-            <Button render={<a href="mailto:juan@celerik.com?subject=Quiero%20llevar%20Colombia%20Sigue%20a%20mi%20empresa" />} size="lg">
-              Hablemos de tu empresa
+            <Button render={<Link href="/empresas/inscripcion" />} size="lg">
+              Inscribe tu empresa
             </Button>
             <p className="mt-4 text-sm text-muted-foreground">
-              ¿Eres empleado y buscas tu aporte?{" "}
+              ¿Prefieres hablar primero?{" "}
+              <a
+                href="mailto:juan@celerik.com?subject=Quiero%20llevar%20Colombia%20Sigue%20a%20mi%20empresa"
+                className="underline underline-offset-2"
+              >
+                Escríbenos
+              </a>{" "}
+              · ¿Eres empleado?{" "}
               <Link href="/login" className="underline underline-offset-2">
                 Ingresa aquí
               </Link>

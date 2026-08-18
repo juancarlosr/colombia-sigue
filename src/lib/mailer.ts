@@ -36,6 +36,31 @@ export async function sendMagicLinkEmail(to: string, url: string): Promise<void>
   );
 }
 
+export async function sendCompanyVerificationEmail(to: string, url: string): Promise<void> {
+  await sendEmail(
+    to,
+    "Verifica la solicitud de tu empresa — Colombia Sigue",
+    `Hola,\n\nRecibimos la solicitud de inscripción de tu empresa en Colombia Sigue.\n\n` +
+      `Confirma este correo para completarla:\n\n${url}\n\n` +
+      `Después de la verificación revisaremos la solicitud y te contactaremos.\n\n` +
+      `Si no fuiste tú, ignora este correo.`,
+  );
+}
+
+export async function sendCompanyWelcomeEmail(
+  to: string,
+  url: string,
+  companyName: string,
+): Promise<void> {
+  await sendEmail(
+    to,
+    `${companyName} fue aprobada en Colombia Sigue`,
+    `¡Bienvenidos!\n\nLa solicitud de ${companyName} fue aprobada.\n\n` +
+      `Ingresa a tu panel de administración con este enlace (personal, expira en 7 días):\n\n${url}\n\n` +
+      `Primer paso: importa la lista de tu equipo (CSV con nombre, documento y correo) y envía las invitaciones.`,
+  );
+}
+
 export async function sendInvitationEmail(
   to: string,
   url: string,

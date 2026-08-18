@@ -5,7 +5,59 @@ import { UserRole } from "@prisma/client";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
+import { createLoginToken, INVITATION_TOKEN_TTL_MS } from "@/lib/auth/tokens";
+import {
+  approveCompany,
+  RegistrationError,
+  rejectCompany,
+} from "@/lib/company-registration";
+import { sendCompanyWelcomeEmail } from "@/lib/mailer";
 import { markPeriodReceived, PayrollError } from "@/lib/payroll";
+
+export type CompanyRequestState = { error?: string; ok?: boolean };
+
+export async function approveCompanyAction(
+  _prev: CompanyRequestState,
+  formData: FormData,
+): Promise<CompanyRequestState> {
+  await requireRole(UserRole.PLATFORM_ADMIN);
+  const companyId = String(formData.get("companyId") ?? "");
+  if (!companyId) return { error: "Solicitud inválida." };
+
+  try {
+    const company = await approveCompany(companyId);
+    const token = await createLoginToken(company.contactEmail!, INVITATION_TOKEN_TTL_MS);
+    const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
+    await sendCompanyWelcomeEmail(
+      company.contactEmail!,
+      `${baseUrl}/auth/verify?token=${token}`,
+      company.name,
+    );
+  } catch (e) {
+    if (e instanceof RegistrationError) return { error: e.message };
+    throw e;
+  }
+  revalidatePath("/platform");
+  return { ok: true };
+}
+
+export async function rejectCompanyAction(
+  _prev: CompanyRequestState,
+  formData: FormData,
+): Promise<CompanyRequestState> {
+  await requireRole(UserRole.PLATFORM_ADMIN);
+  const companyId = String(formData.get("companyId") ?? "");
+  if (!companyId) return { error: "Solicitud inválida." };
+
+  try {
+    await rejectCompany(companyId);
+  } catch (e) {
+    if (e instanceof RegistrationError) return { error: e.message };
+    throw e;
+  }
+  revalidatePath("/platform");
+  return { ok: true };
+}
 
 export type MarkReceivedState = { error?: string; ok?: boolean };
 

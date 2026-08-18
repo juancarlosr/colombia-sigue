@@ -12,6 +12,12 @@ enum UserRole {
   PLATFORM_ADMIN
 }
 
+enum CompanyStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+}
+
 enum EmployeeStatus {
   IMPORTED
   INVITED
@@ -46,11 +52,24 @@ model User {
 }
 
 model Company {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   name        String
-  nit         String   @unique
+  legalName   String?
+  nit         String        @unique
+  status      CompanyStatus @default(ACTIVE)
   adminUserId String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime      @default(now())
+
+  // Self-registration: contact, acceptance evidence (append-only, same
+  // philosophy as DonationAuthorization.metadata) and email proof.
+  contactName          String?
+  contactRole          String?
+  contactEmail         String?
+  employeeEstimate     Int?
+  agreementTextVersion String?
+  agreementAcceptedAt  DateTime?
+  agreementEvidence    Json?
+  emailVerifiedAt      DateTime?
 
   employees      Employee[]
   payrollPeriods PayrollPeriod[]

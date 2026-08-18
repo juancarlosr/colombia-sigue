@@ -1,5 +1,6 @@
 import {
   AuthorizationStatus,
+  CompanyStatus,
   EmployeeStatus,
   type Company,
   type Employee,
@@ -25,7 +26,10 @@ export type CompanyOverview = {
 
 export async function getCompaniesOverview(): Promise<CompanyOverview[]> {
   const [companies, employees, activeAuths, contributions] = await Promise.all([
-    db.company.findMany({ orderBy: { name: "asc" } }),
+    db.company.findMany({
+      where: { status: CompanyStatus.ACTIVE },
+      orderBy: { name: "asc" },
+    }),
     db.employee.findMany({ select: { companyId: true, status: true } }),
     db.donationAuthorization.findMany({
       where: { status: AuthorizationStatus.ACTIVE },

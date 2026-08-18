@@ -58,6 +58,17 @@ Seed: 5 companies at different pilot stages (Celerik/ACME have 3 months of payro
 - Domain logic lives in `src/lib/` (`donations.ts`, `payroll.ts`, `employee-import.ts`, `invitations.ts`, `metrics.ts`, `company-overview.ts`, `csv.ts`); server actions in `src/app/**/actions.ts` are thin guards over it. Tests are colocated `*.test.ts` (44, DB-backed).
 - Auth: hand-rolled (deliberate — Auth.js v5 was beta): hashed single-use tokens (`src/lib/auth/tokens.ts`), jose JWT session cookie, role re-checked against the DB on every request (`src/lib/auth/guards.ts`). RBAC: `EMPLOYEE` → `/app`, `COMPANY_ADMIN` → `/admin` (scoped via `adminUserId`, never client-supplied company ids), `PLATFORM_ADMIN` → `/platform`.
 
+## Company self-registration
+
+Companies self-register at `/empresas/inscripcion` (public form): NIT validated with the
+DIAN check-digit algorithm (`src/lib/nit.ts`), corporate email required (free providers
+blocked), participation agreement (v0-draft, `src/lib/participation-agreement.ts`)
+accepted with append-only evidence. Requests land as `Company.status = PENDING`, the
+contact verifies their email via `/empresas/verificar` (peek-on-GET, consume-on-POST),
+and the platform admin approves/rejects from `/platform`. Approval creates the
+COMPANY_ADMIN user — never before. PENDING/REJECTED companies must never appear in
+overviews nor grant any access.
+
 ## Invariants worth attacking in an audit
 
 1. `DonationAuthorization` is append-only: amount changes create a new row and mark the old `SUPERSEDED` (linked via `supersededById`); cancellation sets `CANCELLED`. Stored consent (text, version, document, email, IP, UA in `metadata`) must never mutate.
